@@ -72,14 +72,28 @@ function sequence() {
 //  Parallel processing
 //--------------------------------------------------------
 function parallel() {
-  return Promise.map(countries, (country) => {
+  // return Promise.map(countries, (country) => {
+  //   return getCountryPopulation(country)
+  //     .then((population) =>
+  //       console.log(`population of ${country} is ${population}`)
+  //     )
+  //     .catch((error) => console.error(error.message));
+  // }).then(() => {
+  //   console.log("All Done!");
+  // });
+
+  const promises = countries.map((country) => {
     return getCountryPopulation(country)
-      .then((population) =>
-        console.log(`population of ${country} is ${population}`)
-      )
-      .catch((error) => console.error(error.message));
-  }).then(() => {
-    console.log("All Done!");
+      .then((population) => ({country, population}))
+      .catch((error) => {
+        console.error(error.message);
+      });
   });
+
+  return Promise.all(promises)
+    .then((results) => {
+      console.log(results);
+    })
+    .catch((err) => {console.error(err)})
 }
 parallel();
