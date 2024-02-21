@@ -1,7 +1,7 @@
 let Promise = require("bluebird");
 
-function getCountryPopulation(country) {
-  return new Promise((resolve, reject) => {
+async function getCountryPopulation(country) {
+  try{
     const url = `https://countriesnow.space/api/v0.1/countries/population`;
     const options = {
       method: "POST",
@@ -10,29 +10,30 @@ function getCountryPopulation(country) {
       },
       body: JSON.stringify({ country }),
     };
-    fetch(url, options)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json?.data?.populationCounts)
-          resolve(json.data.populationCounts.at(-1).value);
-        else reject(new Error(`My Error: no data for ${country}`)); //app logic error message
-      })
-      .catch((err) => reject(err)); // network error - server is down for example...
-    // .catch(reject)  // same same, only shorter...
-  });
-}
+    const res = await fetch(url, options);
+    const json = await res.json();
+    if(json?.data?.populationCounts) return json.data.populationCounts.at(-1).value;
+  }
+    catch(err){
+      console.log(`My Error: no data for ${country}`);
+      throw err;
+    }
+    
+  }
 
 //--------------------------------------------------------
 //  Manual - call one by one...
 //--------------------------------------------------------
-function manual() {
-  getCountryPopulation("France")
-    .then((population) => {
-      console.log(`population of France is ${population}`);
-      return getCountryPopulation("Germany");
-    })
-    .then((population) => console.log(`population of Germany is ${population}`))
-    .catch((err) => console.log("Error in manual: ", err.message));
+async function manual() {
+  try{
+    let populationFrance = await getCountryPopulation("France");
+    console.log(`population of France is ${populationFrance}`)
+
+    let populationGermany = await getCountryPopulation("Germany");
+    console.log(`population of Germany is ${populationGermany}`)
+  } catch (err){
+    console.log('Error in manual:', err.message);
+  }
 }
 // manual()
 
@@ -54,46 +55,33 @@ const countries = [
   "Israel",
 ];
 
-function sequence() {
-  return Promise.each(countries, (country) => {
-    return getCountryPopulation(country)
-      .then((population) =>
-        console.log(`population of ${country} is ${population}`)
-      )
-      .catch((error) => console.error(error.message));
-  }).then(() => {
-    console.log("All Done!");
-  });
+async function sequence() {
+  try{
+    for(let country of countries){
+      let population = await getCountryPopulation(country);
+      console.log(`population of ${country} is ${population}`);
+    }
+    console.log("all done!");
+  } catch(err){
+    console.log('Error in sequance: ', err.message );
+  }
 }
 
-//sequence();
+// sequence();
 
 //--------------------------------------------------------
 //  Parallel processing
 //--------------------------------------------------------
-function parallel() {
-  // return Promise.map(countries, (country) => {
-  //   return getCountryPopulation(country)
-  //     .then((population) =>
-  //       console.log(`population of ${country} is ${population}`)
-  //     )
-  //     .catch((error) => console.error(error.message));
-  // }).then(() => {
-  //   console.log("All Done!");
-  // });
-
-  const promises = countries.map((country) => {
-    return getCountryPopulation(country)
-      .then((population) => ({country, population}))
-      .catch((error) => {
-        console.error(error.message);
-      });
-  });
-
-  return Promise.all(promises)
-    .then((results) => {
-      console.log(results);
-    })
-    .catch((err) => {console.error(err)})
+async function parallel() {
+  try{
+    let populations = [];
+    for(let country of countries){
+      const population = await getCountryPopulation(country);
+      populations.push(population)
+    }
+    countries.forEach((country, i) => console.log(`population of ${country} is ${populations[i]}`));
+  } catch(err){
+    console.log('Error in parallel: ', err.message);
+  }
 }
 parallel();
